@@ -99,7 +99,7 @@ def load_aliases() -> dict:
 
 def item_name(mention: str, aliases: dict) -> str:
     """The canonical name for a mention: lowercased, then looked up in the aliases."""
-    key = mention.lower()
+    key = mention.strip().lower()
     return aliases.get(key, key)
 
 
@@ -135,12 +135,6 @@ def analyze_reviews(reviews_file: str) -> pd.DataFrame:
     (cached with `cache_path(reviews_file, "subjects", "csv")`), and finally
     `build_mentions` with `load_aliases()`. Call the functions; do not redo them.
     """
-    # TODO: your code here
-    pass
-
-
-def summarize_items(mentions: pd.DataFrame) -> pd.DataFrame:
-    """The whole pipeline for one reviews file: raw CSV in, `mentions` out."""
     reviews = pd.read_csv(reviews_file)
 
     sentiment_docs = sentiment_step(reviews, cache_path(reviews_file, "sentiment"))
@@ -161,6 +155,29 @@ def summarize_items(mentions: pd.DataFrame) -> pd.DataFrame:
         reviews, sentences, opinions, entity_rows, subjects, load_aliases()
     )
 
+
+def summarize_items(mentions: pd.DataFrame) -> pd.DataFrame:
+    """One row per item: how often it is mentioned, and how people feel about it."""
+    columns = ["subject", "item", "mentions", "positive", "negative", "net"]
+    if mentions.empty:
+        return pd.DataFrame(columns=columns)
+
+    table = pd.pivot_table(
+        mentions,
+        index=["subject", "item"],
+        columns="mention_sentiment",
+        values="review_id",
+        aggfunc="count",
+        fill_value=0,
+    )
+    summary = table.reindex(columns=["positive", "negative"], fill_value=0)
+    summary["mentions"] = table.sum(axis=1)
+    summary["net"] = summary["positive"] - summary["negative"]
+
+    summary = summary.rename_axis(columns=None).reset_index()
+    return summary[columns].sort_values(
+        ["mentions", "item"], ascending=[False, True]
+    ).reset_index(drop=True)
 
 # --- The Q&A box --------------------------------------------------------------------
 
