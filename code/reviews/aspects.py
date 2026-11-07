@@ -106,7 +106,8 @@ def item_name(mention: str, aliases: dict) -> str:
 def build_mentions(reviews: pd.DataFrame, sentences: pd.DataFrame,
                    opinions: pd.DataFrame, entity_rows: pd.DataFrame,
                    subjects: pd.DataFrame, aliases: dict) -> pd.DataFrame:
-    """Everything together: one row per mention, with its subject, sentence and review."""
+    """Everything together: one row per mention, with its subject, sentence and review.
+    """
     mentions = pd.concat([opinions, entity_rows], ignore_index=True)
 
     mentions = mentions.merge(subjects, on=["review_id", "mention"])
